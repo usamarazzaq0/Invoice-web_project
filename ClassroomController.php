@@ -132,15 +132,4 @@ class ClassroomController extends Controller
     {
         $this->authorize(config('permission.defined.classroom.list.permission'));
 
-        $query = Classroom::orderBy('created_at', 'ASC');
-
-        if (Auth::user()->hasRole(RoleEnum::Teacher->value)) {
-            $query->where('user_id', Auth::user()->id);
-        } else if (Auth::user()->hasRole(RoleEnum::Student->value)) {
-            $query->whereRelation('classroomUsers', 'user_id', Auth::user()->id);
-        }
-
-        $list = $query->pluck('name', 'id');
-
-        return response($list, ResponseStatus::HTTP_OK);
     }
