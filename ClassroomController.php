@@ -28,17 +28,7 @@ class ClassroomController extends Controller
 
         $query = Classroom::orderBy('created_at', 'ASC');
 
-        if (Auth::user()->hasRole(RoleEnum::Teacher->value)) {
-            $query->where('user_id', Auth::user()->id);
-        } else if (Auth::user()->hasRole(RoleEnum::Student->value)) {
-            $query->whereRelation('classroomUsers', 'user_id', Auth::user()->id);
-        }
-
-        $resource = ClassroomResource::collection($query->get());
-
-        return response($resource, ResponseStatus::HTTP_OK);
-    }
-
+  
     /**
      * Store a newly created resource in storage.
      *
