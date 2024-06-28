@@ -29,26 +29,6 @@ class ClassroomController extends Controller
         $query = Classroom::orderBy('created_at', 'ASC');
 
   
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param StoreClassroomRequest $request
-     * @return Response
-     * @throws AuthorizationException
-     */
-    public function store(StoreClassroomRequest $request): Response
-    {
-        $this->authorize(config('permission.defined.classroom.store.permission'));
-
-        $input = $request->validated();
-        $input['user_id'] = Auth::user()->id;
-        $input['uid'] = generateUniqueCode(Classroom::class, 'uid');
-
-        $query = Classroom::create($input);
-        $resource = ClassroomResource::make($query);
-
-        return response($resource, ResponseStatus::HTTP_CREATED);
-    }
 
     /**
      * Display the specified resource.
