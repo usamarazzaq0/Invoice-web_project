@@ -6,7 +6,8 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
-        "laravel/framework": "^11.9",
+        "laravel/framework": "^9.0",
+        "laravel/vite-plugin": "^0.5.1",
         "laravel/tinker": "^2.9"
     },
     "require-dev": {
