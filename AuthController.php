@@ -16,3 +16,15 @@ class AuthController extends Controller
      * @param LoginAuthRequest $request
      * @return Response
      */
+    public function login(LoginAuthRequest $request): Response
+    {
+        if (Auth::attempt($request->only('email', 'password'))) {
+            $user = Auth::user();
+            $user['token'] = $user->createToken('user')->accessToken;
+
+            return response(UserResource::make($user), ResponseStatus::HTTP_OK);
+        }
+
+        return abort(ResponseStatus::HTTP_FORBIDDEN, 'Unauthorised.');
+    }
+}

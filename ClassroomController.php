@@ -28,7 +28,37 @@ class ClassroomController extends Controller
 
         $query = Classroom::orderBy('created_at', 'ASC');
 
-  
+        if (Auth::user()->hasRole(RoleEnum::Teacher->value)) {
+            $query->where('user_id', Auth::user()->id);
+        } else if (Auth::user()->hasRole(RoleEnum::Student->value)) {
+            $query->whereRelation('classroomUsers', 'user_id', Auth::user()->id);
+        }
+
+        $resource = ClassroomResource::collection($query->get());
+
+        return response($resource, ResponseStatus::HTTP_OK);
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     *
+     * @param StoreClassroomRequest $request
+     * @return Response
+     * @throws AuthorizationException
+     */
+    public function store(StoreClassroomRequest $request): Response
+    {
+        $this->authorize(config('permission.defined.classroom.store.permission'));
+
+        $input = $request->validated();
+        $input['user_id'] = Auth::user()->id;
+        $input['uid'] = generateUniqueCode(Classroom::class, 'uid');
+
+        $query = Classroom::create($input);
+        $resource = ClassroomResource::make($query);
+
+        return response($resource, ResponseStatus::HTTP_CREATED);
+    }
 
     /**
      * Display the specified resource.
@@ -102,4 +132,82 @@ class ClassroomController extends Controller
     {
         $this->authorize(config('permission.defined.classroom.list.permission'));
 
+        $query = Classroom::orderBy('created_at', 'ASC');
+
+        if (Auth::user()->hasRole(RoleEnum::Teacher->value)) {
+            $query->where('user_id', Auth::user()->id);
+        } else if (Auth::user()->hasRole(RoleEnum::Student->value)) {
+            $query->whereRelation('classroomUsers', 'user_id', Auth::user()->id);
+        }
+
+        $list = $query->pluck('name', 'id');
+
+        return response($list, ResponseStatus::HTTP_OK);
     }
+
+    /**
+     * Pluck a listing of the resource.
+     *
+     * @param int $id
+     * @return Response
+     * @throws AuthorizationException
+     */
+    public function listClassroomUsers(int $id): Response
+    {
+        $this->authorize(config('permission.defined.classroom.listClassroomUsers.permission'));
+
+        $query = Classroom::findOrFail($id);
+        $query = $query->classroomUsers()
+            ->join('users', 'classroom_users.user_id', '=', 'users.id')
+            ->pluck('users.email', 'users.id')
+            ->all();
+
+        return response($query, ResponseStatus::HTTP_OK);
+    }
+
+    /**
+     * Join a resource in storage.
+     *
+     * @param JoinClassroomRequest $request
+     * @return Response
+     * @throws AuthorizationException
+     */
+    public function join(JoinClassroomRequest $request): Response
+    {
+        $this->authorize(config('permission.defined.classroom.join.permission'));
+
+        $input = $request->validated();
+        $query = Classroom::where('uid', $input['uid'])->first();
+
+        if ($query->classroomUsers()->where('user_id', Auth::user()->id)->exists())
+            return abort(ResponseStatus::HTTP_CONFLICT, 'Classroom already joined.');
+
+        $query->classroomUsers()->create([
+            'user_id' => Auth::user()->id
+        ]);
+
+        return response(null, ResponseStatus::HTTP_NO_CONTENT);
+    }
+
+    /**
+     * Leave a resource in storage.
+     *
+     * @param LeaveClassroomRequest $request
+     * @return Response
+     * @throws AuthorizationException
+     */
+    public function leave(LeaveClassroomRequest $request): Response
+    {
+        $this->authorize(config('permission.defined.classroom.leave.permission'));
+
+        $input = $request->validated();
+        $query = Classroom::findOrFail($input['id']);
+
+        if (!$query->classroomUsers()->where('user_id', Auth::user()->id)->exists())
+            return abort(ResponseStatus::HTTP_NOT_FOUND, 'Classroom not joined.');
+
+        $query->classroomUsers()->where('user_id', Auth::user()->id)->delete();
+
+        return response(null, ResponseStatus::HTTP_NO_CONTENT);
+    }
+}
